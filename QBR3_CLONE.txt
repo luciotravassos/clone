@@ -1,0 +1,258 @@
+
+
+mv /u23/oracle/pbr1db /u23/oracle/qbr3db
+mv /u23/oracle/qbr3db/9.2.0/appsutil/install/PBR1_useo0030 /u23/oracle/qbr3db/9.2.0/appsutil/install/QBR3_useo0021
+mkdir /u23/oracle/qbr3db/9.2.0/network/admin/QBR3_useo0021/
+mv /u24/oracle/pbr1ora /u24/oracle/qbr3ora mv /u23/oracle/qbr3db/9.2.0/admin/PBR1_useo0030 /u23/oracle/qbr3db/9.2.0/admin/QBR3_useo0021
+mv /u24/oracle/pbr1appl /u24/oracle/qbr3appl
+mv /u24/oracle/pbr1comn /u24/oracle/qbr3comn 
+mv /u24/oracle/pbr1db /u24/oracle/qbr3db
+mkdir /oracle_log/QBR3
+nohup cp -R /oracle_log/QBR3/* /oracle_log/QBR3/. &
+chown -R applqbr3:oaq /oracle_log/QBR3
+
+
+su - applqbr3
+
+
+cd /home/oraqbr3/jcp
+cp init* $ORACLE_HOME/dbs/.
+mkdir /u23/oracle/qbr3db/9.2.0/network/admin/QBR3_useo0021/
+cp list* $TNS_ADMIN/.
+cp tns* $TNS_ADMIN
+cp *.xml $CONTEXT_FILE
+vi $CONTEXT_FILE
+# ALTERAR DOMAIN NAME
+
+
+
+
+
+**********************************************
+
+useo0021:/u23/oracle/qbr3db/9.2.0/appsutil/clone/bin> sqlplus /nolog
+
+SQL*Plus: Release 9.2.0.7.0 - Production on Mon May 14 12:00:09 2012
+
+Copyright (c) 1982, 2002, Oracle Corporation.  All rights reserved.
+
+SQL> conn apps/f1981la
+Connected.
+SQL>
+
+
+
+UPDATE fnd_printer SET printer_name='X'||printer_name WHERE printer_name NOT IN ('noprint','brzprt');
+UPDATE fnd_printer_tl SET printer_name='X'||printer_name WHERE printer_name NOT IN ('noprint','brzprt');
+
+
+update 
+  hr.per_all_people_f 
+set 
+  attribute30=email_address,
+  email_address='XPTO'||email_address
+where 
+  email_address is not null
+/
+update
+  applsys.fnd_user 
+set
+  email_address= 'XPTO'||email_address
+where
+  email_address is not null
+/
+commit
+/
+
+update org_freight_tl_dfv oftd1
+   set oftd1.email_transportadora = null
+ where (oftd1.email_transportadora, oftd1.row_id) in (SELECT oftd.email_transportadora, oft.rowid
+                                                      FROM   org_freight_tl_dfv oftd
+                                                            ,org_freight_tl oft
+                                                      WHERE  oft.language = 'US'
+                                                      AND    oft.rowid    = oftd.row_id
+                                                      AND    oftd.email_transportadora is not null);
+
+update hz_contact_points hcp1
+   set hcp1.status = 'I'
+ where (hcp1.email_address, hcp1.owner_table_id) in (SELECT hcp.email_address, hcp.owner_table_id
+                                                     FROM   hz_contact_points hcp
+                                                           ,hz_party_sites hps
+                                                     WHERE  hcp.owner_table_id   = hps.party_site_id
+                                                     AND    hcp.owner_table_name = 'HZ_PARTY_SITES'
+                                                     AND    hcp.status       = 'A'
+                                                     AND    hcp.contact_point_type    = 'EMAIL'
+                                                     AND    hcp.CONTACT_POINT_PURPOSE = 'BIDIMENSIONAL');
+
+
+alter trigger  APPS.AR_LOCATION_VALUES_BRIU    DISABLE   ;
+
+update apps.RA_BATCH_SOURCES_all
+SET    attribute4 = '1'
+WHERE  attribute4 > '1'  ;
+
+UPDATE apps.AR_LOCATION_VALUES B
+SET    b.attribute5 = '1'
+WHERE  B.LOCATION_SEGMENT_QUALIFIER = 'STATE'
+AND    b.attribute5 > '1'   ;
+
+alter trigger  APPS.AR_LOCATION_VALUES_BRIU    enable   ;
+COMMIT;
+
+
+
+
+**************************************
+
+cd $ORACLE_HOME/appsutil/clone/bin
+perl adcfgclone.pl dbTier $CONTEXT_FILE
+
+Enter the APPS password [APPS]:
+f1981la
+
+Running Rapid Clone with command:
+        perl /u23/oracle/qbr3db/9.2.0/appsutil/clone/bin/adclone.pl java=/u23/oracle/qbr3db/9.2.0/appsutil/clone/bin/../jre/jre mode=apply stage=/u23/oracle/qbr3db/9.2.0/appsutil/clone/bin/.. component=dbTier method=CUSTOM dbctxtg=/u23/oracle/qbr3db/9.2.0/appsutil/QBR3_useo0021.xml  showProgress contextValidated=false
+
+Beginning database tier Apply - Mon May 14 12:14:59 2012
+Log file located at /u23/oracle/qbr3db/9.2.0/appsutil/log/QBR3_useo0021/ApplyDBTier_05141214.log
+
+
+Completed Apply...
+Mon May 14 12:19:38 2012
+
+Beginning APPSDB_QBR3 registration to central inventory...
+
+ORACLE_HOME NAME   : APPSDB_QBR3
+ORACLE_HOME PATH   : /u23/oracle/qbr3db/9.2.0
+INVENTORY LOCATION : /var/opt/oracle/oraInst.loc
+
+Log file located at /u09/oracle/QBR3db/oraInventory/logs/OracleHomeCloner_05141219.log
+ORACLE_HOME /u23/oracle/qbr3db/9.2.0 was registered successfully.
+
+Starting database listener for QBR3:
+Running:
+ /u23/oracle/qbr3db/9.2.0/appsutil/scripts/QBR3_useo0021/addlnctl.sh start QBR3
+
+You are running addlnctl.sh version 115.3
+
+
+Starting listener process QBR3 ...
+
+
+Listener QBR3 has already been started.
+
+
+addlnctl.sh: exiting with status 0
+
+
+**********************************************
+useo0021:/home/applqbr3/jcp> cp *.env /u24/oracle/qbr3appl/.
+useo0021:/home/applqbr3/jcp> cp adovars.env /u24/oracle/qbr3appl/admin/.
+useo0021:/home/applqbr3/jcp> rm /u24/oracle/qbr3appl/adovars.env
+cp QBR3_useo0021.env /u24/oracle/qbr3ora/8.0.6/QBR3_useo0021.env
+
+vi QBR3_useo0021.xml
+
+:1,$s/us\.essilor/br\.essilor/g 
+
+vi wdbsvr.app
+
+:1,$s/us\.essilor/br\.essilor/g 
+
+
+cp QBR3_useo0021.xml /u24/oracle/qbr3appl/admin/QBR3_useo0021.xml
+
+
+cd $COMMON_TOP/clone/bin
+perl adcfgclone.pl appsTier $CONTEXT_FILE
+
+
+
+
+*****************************
+     UPDATE 
+    ALR_ALERTS
+        SET ENABLED_FLAG='N';
+
+Update ALR_ALERT_INPUTS
+        SET ENABLED_FLAG='N';
+Commit;
+
+
+*****************************
+
+create or replace directory XXFI_OUT_DIR as '/oracle_log/QBR3/in_out/xxfi/files_out';
+create or replace directory XXPO_OUT_DIR as '/oracle_log/QBR3/in_out/xxpo/files_out';
+create or replace directory XXFI_IN_DIR as '/oracle_log/QBR3/in_out/xxfi/files_in';
+create or replace directory XXFI as '/oracle_log/QBR3/in_out/xxfi/files_in/queue';
+create or replace directory XXFI_CANCELA_ENTRADA as '/oracle_log/QBR3/in_out/xxfi/files_out/queue/entrada/cancelamento';
+create or replace directory XXFI_CANCELA_SAIDA as '/oracle_log/QBR3/in_out/xxfi/files_out/queue/saida/cancelamento';
+create or replace directory XXFI_LIDOS_SAIDA as '/oracle_log/QBR3/in_out/xxfi/files_out/queue/saida/lidos';
+create or replace directory XXFI_EMISSAO_SAIDA as '/oracle_log/QBR3/in_out/xxfi/files_out/queue/saida/emissao';
+create or replace directory XXFI_EMISSAO_ENTRADA as '/oracle_log/QBR3/in_out/xxfi/files_out/queue/entrada/emissao';
+create or replace directory XXFI_SUFRAMA_ENTRADA as '/oracle_log/QBR3/in_out/xxfi/files_out/queue/entrada/suframa';
+create or replace directory XXFI_INUTILIZA_ENTRADA as '/oracle_log/QBR3/in_out/xxfi/files_out/queue/entrada/inutilizacao';
+create or replace directory XXFI_INUTILIZA_SAIDA as '/oracle_log/QBR3/in_out/xxfi/files_out/queue/saida/inutilizacao';
+create or replace directory XXTI_OUT_DIR as '/oracle_log/QBR3/in_out/xxti/out_dir';
+create or replace directory XXTI_IN_DIR as '/oracle_log/QBR3/in_out/xxti/in_dir';
+create or replace directory MOLDSLOAD as '/tmp';
+
+
+
+grant all on directory XXFI_OUT_DIR to apps;
+grant all on directory XXPO_OUT_DIR to apps;
+grant all on directory XXFI_IN_DIR  to apps;
+grant all on directory XXFI as  to apps;
+grant all on directory XXFI_CANCELA_ENTRADA  to apps;
+grant all on directory XXFI_CANCELA_SAIDA  to apps;
+grant all on directory XXFI_LIDOS_SAIDA  to apps;
+grant all on directory XXFI_EMISSAO_SAIDA to apps;
+grant all on directory XXFI_EMISSAO_ENTRADA  to apps;
+grant all on directory XXFI_SUFRAMA_ENTRADA  to apps;
+grant all on directory XXFI_INUTILIZA_ENTRADA  to apps;
+grant all on directory XXFI_INUTILIZA_SAIDA  to apps;
+grant all on directory XXTI_OUT_DIR  to apps;
+grant all on directory XXTI_IN_DIR  to apps;
+grant all on directory MOLDSLOAD  to apps;
+
+
+********************************************
+$XXUP_TOP/install/CREATE_EXTLIB apps/f1981la XXUPIO_EXTLIB
+
+
+
+******************************************
+
+alter user MSAFI identified by  MSAFI;
+
+connect MSAFI/MSAFI
+
+Drop database link MSAFP_PMSAF1;
+ 
+Create database link MSAFP_PMSAF1
+Connect to msafq identified by msafq
+Using 'TTRANS01';
+
+conn / as sysdba
+Drop public database link NFE;
+
+Create public database link NFE
+Connect to nfeteste identified by nfeteste
+Using 'TTRANS01';
+
+
+
+************************************
+
+
+***************************************
+
+#AJUSTES TNSNAME.ORA
+
+vi $TNS_ADMIN/tnsnames.ora
+
+*********************************
+
+http://useo0021.br.essilor.pvt:8026/oa_servlets/AppsLogin
+
+
